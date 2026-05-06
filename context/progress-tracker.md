@@ -5,11 +5,11 @@ change.
 
 ## Current Phase
 
-- Step 1 complete — Step 2 next
+- Step 2 complete — Step 3 next
 
 ## Current Goal
 
-- Step 2: Backend API core (catalog CRUD, admin auth guard, response format).
+- Step 3: Bot service onboarding flow and ad draft creation.
 
 ## Completed
 
