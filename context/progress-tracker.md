@@ -5,11 +5,11 @@ change.
 
 ## Current Phase
 
-- Step 2 complete — Step 3 next
+- Step 3 complete — Step 4 next
 
 ## Current Goal
 
-- Step 3: Bot service onboarding flow and ad draft creation.
+- Step 4: Admin panel moderation MVP.
 
 ## Completed
 
@@ -22,14 +22,13 @@ change.
 
 ## In Progress
 
-- Step 2: backend-api scaffold and catalog CRUD APIs.
+- Step 4 prep: define admin-panel scaffold and moderation pages.
 
 ## Next Up
 
-1. **Step 2**: apps/backend-api scaffold, Express/Fastify base, catalog CRUD endpoints.
-2. Step 3: bot service onboarding and draft ad creation flow.
-3. Step 4: admin panel moderation MVP.
-4. Step 5: publication engine + plan counter decrement.
+1. **Step 4**: admin panel moderation MVP.
+2. Step 5: publication engine + plan counter decrement.
+3. Step 6: hardening, QA, and release readiness.
 
 ## Resolved Decisions
 
@@ -62,3 +61,9 @@ change.
 - Automated test added and passing (`admin-auth.service.test.ts`).
 - Typecheck passes for monorepo after Step 2 scaffold.
 - API health endpoint runs on port 3001; DB-backed endpoint check is currently blocked because PostgreSQL is not listening on local port 5432 at the moment (`ECONNREFUSED`).
+- Step 3 implemented:
+  - Added backend bot-flow module with endpoints for user upsert, bootstrap catalog, draft create, dynamic field collection, image upsert, preview, and submit to `PENDING_APPROVAL`.
+  - Added draft submission validation for required fields/image and plan assignment with `remaining_publications` initialization.
+  - Added `apps/bot-service` with Telegram polling bot flow: `/start`, language select, category/brand choose, step-by-step dynamic field collection, preview confirmation, and plan-based submit.
+  - Monorepo typecheck passes including new app.
+  - Existing backend tests still pass.
