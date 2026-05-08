@@ -146,7 +146,25 @@ catalogRouter.get("/advertising-plans", async (_req, res, next) => {
   }
 });
 
+catalogRouter.get("/plans", async (_req, res, next) => {
+  try {
+    const data = await listAdvertisingPlans();
+    res.json(ok(data));
+  } catch (error) {
+    next(error);
+  }
+});
+
 catalogRouter.post("/advertising-plans", async (req, res, next) => {
+  try {
+    const data = await createAdvertisingPlan(req.body);
+    res.status(201).json(ok(data));
+  } catch (error) {
+    next(error);
+  }
+});
+
+catalogRouter.post("/plans", async (req, res, next) => {
   try {
     const data = await createAdvertisingPlan(req.body);
     res.status(201).json(ok(data));
@@ -165,7 +183,27 @@ catalogRouter.put("/advertising-plans/:id", async (req, res, next) => {
   }
 });
 
+catalogRouter.put("/plans/:id", async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+    const data = await updateAdvertisingPlan(id, req.body);
+    res.json(ok(data));
+  } catch (error) {
+    next(error);
+  }
+});
+
 catalogRouter.delete("/advertising-plans/:id", async (req, res, next) => {
+  try {
+    const { id } = idParamSchema.parse(req.params);
+    const data = await deleteAdvertisingPlan(id);
+    res.json(ok(data));
+  } catch (error) {
+    next(error);
+  }
+});
+
+catalogRouter.delete("/plans/:id", async (req, res, next) => {
   try {
     const { id } = idParamSchema.parse(req.params);
     const data = await deleteAdvertisingPlan(id);

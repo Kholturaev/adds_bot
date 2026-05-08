@@ -5,11 +5,11 @@ change.
 
 ## Current Phase
 
-- Step 3 complete — Step 4 next
+- Step 5 complete — Step 6 next
 
 ## Current Goal
 
-- Step 4: Admin panel moderation MVP.
+- Step 6: hardening, QA, and release readiness.
 
 ## Completed
 
@@ -19,16 +19,17 @@ change.
 - Admin UI context and MVP screens defined.
 - Data model context added with entity-level design.
 - **Step 1 done**: monorepo root config, packages/shared (enums/types), packages/database (Drizzle schema for all entities, migrate.ts, seed.ts).
+- **Step 4 done**: admin moderation backend endpoints and admin-panel MVP (login, dashboard, queue, ad detail actions, catalog create/list for categories/brands/plans).
+
+- **Step 5 done**: backend publish endpoint with transactional counter decrement, publication event insert, and status transition (APPROVED/PUBLISHED_PARTIAL → PUBLISHED_PARTIAL/PUBLISHED_COMPLETE); admin-panel publish action with chat-id override input and publication event history.
 
 ## In Progress
 
-- Step 4 prep: define admin-panel scaffold and moderation pages.
+- Step 6 prep: integration tests, logging, and release hardening.
 
 ## Next Up
 
-1. **Step 4**: admin panel moderation MVP.
-2. Step 5: publication engine + plan counter decrement.
-3. Step 6: hardening, QA, and release readiness.
+1. **Step 6**: hardening, QA, integration tests, and release readiness.
 
 ## Resolved Decisions
 
@@ -67,3 +68,9 @@ change.
   - Added `apps/bot-service` with Telegram polling bot flow: `/start`, language select, category/brand choose, step-by-step dynamic field collection, preview confirmation, and plan-based submit.
   - Monorepo typecheck passes including new app.
   - Existing backend tests still pass.
+- Step 5 implemented:
+  - Added backend `publishAd` service function with status guard (`APPROVED` or `PUBLISHED_PARTIAL`), remaining-counter check (never below 0), Telegram `sendMessage` call via `ads-admin.publisher.ts`, transactional decrement + `adPublicationEvents` insert + status-history row, and status transition to `PUBLISHED_PARTIAL` / `PUBLISHED_COMPLETE`.
+  - Added `POST /admin/ads/:id/publish` route (optional `publishedToChatId` body override env default).
+  - Extended `getAdDetail` to return `publicationEvents` alongside status history.
+  - Extended admin-panel `AdDetail` type with `publicationEvents`, added `publishAd` API call, Publish button with optional chat-id input, and publication event list in the detail pane.
+  - All typechecks, backend tests, and admin-panel build pass.

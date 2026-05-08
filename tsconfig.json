@@ -4,6 +4,7 @@
     { "path": "./packages/shared" },
     { "path": "./packages/database" },
     { "path": "./apps/backend-api" },
-    { "path": "./apps/bot-service" }
+    { "path": "./apps/bot-service" },
+    { "path": "./apps/admin-panel" }
   ]
 }

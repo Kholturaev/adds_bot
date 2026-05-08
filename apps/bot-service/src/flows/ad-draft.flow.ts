@@ -72,117 +72,133 @@ export function bindAdDraftFlow(bot: TelegramBot): void {
       return;
     }
 
-    const session = sessions.get(chatId);
-    if (!session) {
+    try {
+      // Acknowledge immediately so Telegram does not expire callback queries.
       await bot.answerCallbackQuery(query.id);
-      return;
-    }
 
-    if (data.startsWith("lang:")) {
-      const language = data.split(":")[1] as "uz" | "ru";
-      session.language = language;
-      session.step = "WAIT_CATEGORY";
+      const session = sessions.get(chatId);
+      if (!session) {
+        return;
+      }
 
-      await upsertTelegramUser({
-        telegramUserId: session.telegramUserId,
-        telegramUsername: query.from.username,
-        language,
-      });
+      if (data.startsWith("lang:")) {
+        const language = data.split(":")[1] as "uz" | "ru";
+        if (language !== "uz" && language !== "ru") {
+          await bot.sendMessage(
+            chatId,
+            "Noto'g'ri til tanlandi. / Неверный язык.",
+          );
+          return;
+        }
 
-      session.bootstrap = await getBootstrapData();
+        session.language = language;
+        session.step = "WAIT_CATEGORY";
 
-      await bot.sendMessage(chatId, "Bugun nima qo'shmoqchisiz?", {
-        reply_markup: {
-          inline_keyboard: session.bootstrap.categories.map((c) => [
-            { text: c.name, callback_data: `cat:${c.id}` },
-          ]),
-        },
-      });
-    }
+        await upsertTelegramUser({
+          telegramUserId: session.telegramUserId,
+          telegramUsername: query.from.username,
+          language,
+        });
 
-    if (data.startsWith("cat:") && session.step === "WAIT_CATEGORY") {
-      session.categoryId = data.split(":")[1];
-      session.step = "WAIT_BRAND";
+        session.bootstrap = await getBootstrapData();
 
-      const brands = (session.bootstrap?.brands ?? []).filter(
-        (b) => b.categoryId === session.categoryId,
-      );
-
-      await bot.sendMessage(chatId, "Brandni tanlang:", {
-        reply_markup: {
-          inline_keyboard: brands.map((b) => [
-            { text: b.name, callback_data: `brand:${b.id}` },
-          ]),
-        },
-      });
-    }
-
-    if (data.startsWith("brand:") && session.step === "WAIT_BRAND") {
-      session.brandId = data.split(":")[1];
-
-      const draft = await createDraft({
-        telegramUserId: await getInternalUserId(
-          session.telegramUserId,
-          session.language,
-          query.from.username,
-        ),
-        categoryId: session.categoryId!,
-        brandId: session.brandId,
-      });
-
-      session.adId = draft.id;
-      session.fields = await getDraftFields(draft.id);
-      session.fieldIndex = 0;
-      session.step = "WAIT_FIELD";
-
-      await askCurrentField(bot, chatId, session);
-    }
-
-    if (data === "confirm:yes" && session.step === "WAIT_CONFIRM") {
-      session.step = "WAIT_PLAN";
-      await bot.sendMessage(chatId, "Tarifni tanlang:", {
-        reply_markup: {
-          inline_keyboard: (session.bootstrap?.plans ?? []).map((p) => [
-            { text: p.titleUz, callback_data: `plan:${p.id}` },
-          ]),
-        },
-      });
-    }
-
-    if (data === "confirm:no" && session.step === "WAIT_CONFIRM") {
-      session.step = "WAIT_CATEGORY";
-      session.adId = undefined;
-      session.fields = [];
-      session.fieldIndex = 0;
-
-      await bot.sendMessage(
-        chatId,
-        "Qaytadan boshlaymiz. Kategoriyani tanlang:",
-        {
+        await bot.sendMessage(chatId, "Bugun nima qo'shmoqchisiz?", {
           reply_markup: {
-            inline_keyboard: (session.bootstrap?.categories ?? []).map((c) => [
+            inline_keyboard: session.bootstrap.categories.map((c) => [
               { text: c.name, callback_data: `cat:${c.id}` },
             ]),
           },
-        },
-      );
-    }
+        });
+      }
 
-    if (
-      data.startsWith("plan:") &&
-      session.step === "WAIT_PLAN" &&
-      session.adId
-    ) {
-      const planId = data.split(":")[1];
-      await submitDraft(session.adId, planId);
-      session.step = "IDLE";
+      if (data.startsWith("cat:") && session.step === "WAIT_CATEGORY") {
+        session.categoryId = data.split(":")[1];
+        session.step = "WAIT_BRAND";
+
+        const brands = (session.bootstrap?.brands ?? []).filter(
+          (b) => b.categoryId === session.categoryId,
+        );
+
+        await bot.sendMessage(chatId, "Brandni tanlang:", {
+          reply_markup: {
+            inline_keyboard: brands.map((b) => [
+              { text: b.name, callback_data: `brand:${b.id}` },
+            ]),
+          },
+        });
+      }
+
+      if (data.startsWith("brand:") && session.step === "WAIT_BRAND") {
+        session.brandId = data.split(":")[1];
+
+        const draft = await createDraft({
+          telegramUserId: await getInternalUserId(
+            session.telegramUserId,
+            session.language,
+            query.from.username,
+          ),
+          categoryId: session.categoryId!,
+          brandId: session.brandId,
+        });
+
+        session.adId = draft.id;
+        session.fields = await getDraftFields(draft.id);
+        session.fieldIndex = 0;
+        session.step = "WAIT_FIELD";
+
+        await askCurrentField(bot, chatId, session);
+      }
+
+      if (data === "confirm:yes" && session.step === "WAIT_CONFIRM") {
+        session.step = "WAIT_PLAN";
+        await bot.sendMessage(chatId, "Tarifni tanlang:", {
+          reply_markup: {
+            inline_keyboard: (session.bootstrap?.plans ?? []).map((p) => [
+              { text: p.titleUz, callback_data: `plan:${p.id}` },
+            ]),
+          },
+        });
+      }
+
+      if (data === "confirm:no" && session.step === "WAIT_CONFIRM") {
+        session.step = "WAIT_CATEGORY";
+        session.adId = undefined;
+        session.fields = [];
+        session.fieldIndex = 0;
+
+        await bot.sendMessage(
+          chatId,
+          "Qaytadan boshlaymiz. Kategoriyani tanlang:",
+          {
+            reply_markup: {
+              inline_keyboard: (session.bootstrap?.categories ?? []).map(
+                (c) => [{ text: c.name, callback_data: `cat:${c.id}` }],
+              ),
+            },
+          },
+        );
+      }
+
+      if (
+        data.startsWith("plan:") &&
+        session.step === "WAIT_PLAN" &&
+        session.adId
+      ) {
+        const planId = data.split(":")[1];
+        await submitDraft(session.adId, planId);
+        session.step = "IDLE";
+        await bot.sendMessage(
+          chatId,
+          "E'loningiz qabul qilindi va ko'rib chiqish navbatiga yuborildi.",
+        );
+      }
+    } catch (error) {
+      console.error("Callback processing failed:", error);
       await bot.sendMessage(
         chatId,
-        "E'loningiz qabul qilindi va ko'rib chiqish navbatiga yuborildi.",
+        "Xatolik yuz berdi. Iltimos, qaytadan urinib ko'ring.\nПроизошла ошибка. Попробуйте снова.",
       );
     }
-
-    await bot.answerCallbackQuery(query.id);
   });
 
   bot.on("message", async (msg) => {
@@ -201,20 +217,45 @@ export function bindAdDraftFlow(bot: TelegramBot): void {
       return;
     }
 
-    if (field.fieldType === "image") {
-      const lastPhoto = msg.photo?.[msg.photo.length - 1];
-      if (!lastPhoto) {
-        await bot.sendMessage(chatId, "Iltimos, rasm yuboring.");
-        return;
+    try {
+      if (field.fieldType === "image") {
+        const lastPhoto = msg.photo?.[msg.photo.length - 1];
+        if (!lastPhoto) {
+          await bot.sendMessage(chatId, "Iltimos, rasm yuboring.");
+          return;
+        }
+        await saveImage(session.adId, `telegram-file:${lastPhoto.file_id}`);
+      } else {
+        const value = msg.text ?? "";
+
+        if (field.fieldType === "number") {
+          const normalized = parseNumericInput(value);
+          if (normalized === null) {
+            await bot.sendMessage(
+              chatId,
+              "Noto'g'ri raqam formati. Masalan: 10000000 yoki 10 000 000",
+            );
+            return;
+          }
+
+          await saveFieldValue(session.adId, {
+            fieldDefinitionId: field.id,
+            value: normalized,
+          });
+        } else {
+          await saveFieldValue(session.adId, {
+            fieldDefinitionId: field.id,
+            value,
+          });
+        }
       }
-      await saveImage(session.adId, `telegram-file:${lastPhoto.file_id}`);
-    } else {
-      const value = msg.text ?? "";
-      const normalized = field.fieldType === "number" ? Number(value) : value;
-      await saveFieldValue(session.adId, {
-        fieldDefinitionId: field.id,
-        value: normalized,
-      });
+    } catch (error) {
+      console.error("Field save failed:", error);
+      await bot.sendMessage(
+        chatId,
+        "Qiymat saqlanmadi. Iltimos, to'g'ri formatda qayta yuboring.",
+      );
+      return;
     }
 
     session.fieldIndex += 1;
@@ -251,7 +292,7 @@ async function askCurrentField(
 
   let suffix = "";
   if (field.fieldType === "number") {
-    suffix = " (faqat raqam)";
+    suffix = " (faqat raqam, masalan: 10000000)";
   }
 
   await bot.sendMessage(chatId, `${field.labelUz}${suffix}:`);
@@ -293,4 +334,24 @@ async function getInternalUserId(
   });
 
   return user.id;
+}
+
+function parseNumericInput(input: string): number | null {
+  const trimmed = input.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  // Accept common human input formats: spaces, commas, apostrophes, trailing dot.
+  const compact = trimmed.replace(/[\s,_']/g, "").replace(/\.$/, "");
+  if (!/^-?\d+(\.\d+)?$/.test(compact)) {
+    return null;
+  }
+
+  const value = Number(compact);
+  if (!Number.isFinite(value)) {
+    return null;
+  }
+
+  return value;
 }

@@ -1,7 +1,17 @@
 import dotenv from "dotenv";
+import { existsSync } from "node:fs";
+import { resolve } from "node:path";
 import { z } from "zod";
 
-dotenv.config();
+const envCandidates = [
+  resolve(process.cwd(), ".env"),
+  resolve(process.cwd(), "../../.env"),
+];
+const envPath = envCandidates.find((candidate) => existsSync(candidate));
+
+if (envPath) {
+  dotenv.config({ path: envPath });
+}
 
 const envSchema = z.object({
   BOT_TOKEN: z.string().min(10),
@@ -17,3 +27,4 @@ export const env = {
   botToken: parsed.BOT_TOKEN,
   backendApiUrl: parsed.BACKEND_API_URL,
 };
+    

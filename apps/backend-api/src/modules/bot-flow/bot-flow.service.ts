@@ -41,9 +41,9 @@ export async function upsertTelegramUser(input: unknown) {
         updatedAt: new Date(),
       },
     })
-    .returning();
+    .returning({ id: telegramUsers.id });
 
-  return user;
+  return { id: user.id };
 }
 
 export async function getBootstrapData() {
